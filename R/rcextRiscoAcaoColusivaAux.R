@@ -12,85 +12,10 @@
 #' @author Bruno M. S. S. Melo
 #' @examples
 #' \dontrun{
-#' grafoLic <- rcextAcaoColusivaLic(grLicitacoes)
+#' grafoLic <- rodizioMetodologiaGrafoPageRank(grLicitacoes)
 #' }
 #' @seealso \code{igraph}#' @importFrom igraph walktrap.community
-#' @importFrom igraph membership
-#' @importFrom igraph induced.subgraph
-#' @importFrom igraph page.rank
-#' @importFrom igraph delete.vertices
 rcextRiscoAcaoColusivaAux <- function(grLicitacoes) {
-
-  e <- new.env(parent = emptyenv())
-
-  # identifica "comunidades" (mercados)
-  wc <- igraph::walktrap.community(grLicitacoes)
-
-  # inclui no environment "e" uma copia do grafo "grLicitacoes" a partir da qual sera construido
-  # o grafo contendo unicamente as comunidades correspondentes a "mercados de risco"
-  e$grMercadosRisco <- grLicitacoes
-
-  # inicializa o vetor que ira conter as comunidades (mercados) consideradas como "de risco"
-  e$vcMercadosRisco <- numeric()
-
-  # inicializa o vetor que ira conter as empresas suspeitas de pratica colusiva
-  e$vcEmpresasRisco <- numeric()
-
-  # cria um environment para as ser utilizado como uma estrutura do tipo map para armazenar os page
-  # ranks das empresas num dado mercado cujo identificador sera utilizado como key
-  e$mapPageRanks <- new.env(parent = emptyenv())
-
-  # selecao de empresas a partir do page rank intra-comunitario
-  sapply(sort(unique(igraph::membership(wc))), function(g) {
-
-    # empresas que pertencem a comunidade g (mercado)
-    empresas_comunidade_g <- which(igraph::membership(wc)==g)
-
-    # extrai subgrafo correspondente a comunidade g
-    subg<-igraph::induced.subgraph(grLicitacoes, empresas_comunidade_g)
-
-    # calcula page rank intracomunitario
-    pr <- igraph::page.rank(subg)$vector
-
-    # determina o rearranjo necessario para ordenar as empresas em ordem decrescente de page rank
-    ordem_dec <- order(pr, decreasing = T)
-
-    # reordena de forma decrescente o vetor de page ranks
-    pr <- pr[ordem_dec]
-
-    # reordena de forma decrescente o vetor de empresas que pertencem a comunidade g
-    empresas_comunidade_g <- empresas_comunidade_g[ordem_dec]
-
-    # seleciona as empresas de maior page_rank até que o rank acumulado seja de 0.6
-    selec_emp <- cumsum(pr)<.6
-
-    # o numero de empresas acima selecionadas não devera ultrapassar 30% do total ou 20 empresas
-    max_emp <- min(ceiling(0.3*length(pr)), 20)
-
-    # ... nem ser inferior a 5
-    min_emp <- 5
-
-    if ((sum(selec_emp) <= max_emp) & (sum(selec_emp) >= min_emp)) {
-
-      # insere a comunidade (mercado) na listagem de mercados de risco
-      e$vcMercadosRisco <- c(e$vcMercadosRisco, g)
-
-      # armazena o vetor de page ranks no environment e
-      eval(parse(text = paste("e$mapPageRanks$'", "' <- pr", sep = as.character(g))))
-
-      # atualiza o vetor de empresas suspeitas
-      vcEmpresasRisco <- rep(g, sum(selec_emp))
-      names(vcEmpresasRisco) <- wc$names[empresas_comunidade_g[selec_emp]]
-      e$vcEmpresasRisco <- c(e$vcEmpresasRisco, vcEmpresasRisco)
-    } else {
-      # retira todo o subgrafo (comunidade) do grafo principal
-      e$grMercadosRisco <- igraph::delete.vertices(
-        e$grMercadosRisco,
-        wc$names[empresas_comunidade_g])
-    }
-  })
-
-  e$cmMercados <- wc
-
-  return(e)
+  .Deprecated("TipologiaRodizioMetodologiaGrafo")
+  TipologiaRodizioMetodologiaGrafo(grLicitacoes)
 }

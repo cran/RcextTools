@@ -37,9 +37,11 @@
 #'         \item 2 retorna um objeto do tipo \code{data.frame} a partir do qual podera ser criado um grafo
 #'          por meio da funcao \code{igraph::graph.data.frame()}
 #'          }
+#' @param agregar_arestas parametro do tipo \code{logical} indicando se arestas repetidas deverao ser agregadas numa unica
+#' aresta cujo peso seja as soma dos pesos individuais. Por padrao este parametro tem valor \code{TRUE}.
 #' @param considerar_desconto parametro do tipo \code{logical} indicando se o desconto obtido (diferenca entre o valor
 #' homologado e o valor estimado) devera ser levado em consideracao na atribuicao dos pesos das relacoes perdedor-vencedor.
-#' Por padrao este parametro tem valor \code{TRUE}
+#' Por padrao este parametro tem valor \code{FALSE}.
 #' @return o retorno depende do valor especificado para o parâmetro \code{tipo_retorno}.
 #' @author Bruno M. S. S. Melo
 #' @examples
@@ -49,64 +51,7 @@
 #' @seealso \code{igraph}
 #' @importFrom sqldf sqldf
 #' @export
-rcextCriaGrafoLic <- function(dados, tipo_retorno = 0, considerar_desconto = T) {
-
-  # para passar nos checks do CRAN:
-  VENCEDOR = NULL
-
-  if ((!is.numeric(tipo_retorno)) | (!(tipo_retorno %in% 0:2))) {
-    tipo_retorno <- 0
-  }
-
-  dfPERDEDOR <- subset(x = dados, VENCEDOR == F)
-  dfVENCEDOR <- subset(x = dados, VENCEDOR == T)
-
-  envGrafo <- new.env(parent = emptyenv())
-
-  suppressWarnings(
-    envGrafo$dfLicitacoes <- sqldf::sqldf(
-      'SELECT DISTINCT
-          dfPERDEDOR.CNPJ CNPJ_PERDEDOR,
-          dfVENCEDOR.CNPJ CNPJ_VENCEDOR,
-          dfVENCEDOR.ID_LICITACAO,
-          dfVENCEDOR.ID_ITEM,
-          dfVENCEDOR.VALOR_ESTIMADO,
-          dfVENCEDOR.VALOR_HOMOLOGADO
-      FROM
-          dfVENCEDOR
-      INNER JOIN
-          dfPERDEDOR
-            ON (dfVENCEDOR.ID_LICITACAO = dfPERDEDOR.ID_LICITACAO
-                AND dfVENCEDOR.ID_ITEM = dfPERDEDOR.ID_ITEM
-                AND dfVENCEDOR.CNPJ != dfPERDEDOR.CNPJ )'
-    )
-  )
-
-  if (considerar_desconto){
-    # retira registros que nao possuam valores estimados e valores homologados
-    envGrafo$dfLicitacoes <- envGrafo$dfLicitacoes[complete.cases(envGrafo$dfLicitacoes[, c("VALOR_ESTIMADO", "VALOR_HOMOLOGADO")]),]
-
-    # calcula peso da relacao perdedor-vencedor
-    envGrafo$dfLicitacoes$PESO_RELACAO <- envGrafo$dfLicitacoes$VALOR_HOMOLOGADO/envGrafo$dfLicitacoes$VALOR_ESTIMADO
-
-    # Melhor fazer isso mercado a mercado (noutro momento)
-    # # retira registros cujos pesos calculados sejam outliers
-    # tukey <- fivenum(envGrafo$dfLicitacoes$PESO_RELACAO)
-    # Q3 <- tukey[4]
-    # Q1 <- tukey[2]
-    # envGrafo$dfLicitacoes <- envGrafo$dfLicitacoes[envGrafo$dfLicitacoes$PESO_RELACAO < (Q3 + 1.5*(Q3-Q1)),]
-
-  } else{
-    envGrafo$dfLicitacoes$PESO_RELACAO <- 1
-  }
-
-  envGrafo$grLicitacoes <- igraph::graph.data.frame(
-    data.frame(
-      from = envGrafo$dfLicitacoes[, "CNPJ_PERDEDOR"],
-      to = envGrafo$dfLicitacoes[, "CNPJ_VENCEDOR"],
-      weight = envGrafo$dfLicitacoes[, "PESO_RELACAO"]
-    )
-  )
-
-  return(envGrafo)
+rcextCriaGrafoLic <- function(dados, tipo_retorno = 0, agregar_arestas = T, considerar_desconto = F) {
+  .Deprecated('TipologiaRodizioCriaGrafo')
+  TipologiaRodizioCriaGrafo(dados, tipo_retorno, considerar_desconto)
 }
